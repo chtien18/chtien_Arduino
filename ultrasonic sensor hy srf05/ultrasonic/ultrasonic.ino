@@ -1,5 +1,5 @@
-#define SONAR_TRIGGER_PIN     2
-#define SONAR_ECHO_PIN        3
+#define SONAR_TRIGGER_PIN     4
+#define SONAR_ECHO_PIN        5
 
 int current_distance=0;
 
@@ -33,29 +33,31 @@ void loop()
   if(Serial.available()>0){
    int incomingbyte=Serial.read();
    current_distance = measure_distance();
-   //Serial.println(current_distance);
-   String json=buildJson();
-   char jsonStr[200];
    
-   json.toCharArray(jsonStr,200);
-   Serial.println(jsonStr);
-   delay(500);
+   if (incomingbyte== 97){
+   String data =String(current_distance);
+   Serial.print(data);
+   }
+   else{
+
+  String json=buildJson();
+  char jsonStr[200];
+  json.toCharArray(jsonStr,200);
+  Serial.print(jsonStr);
+   
+  
+   }
+   delay(20);
+
   }
 }
 
 String buildJson() {
   String data = "{";
- // data+="\n";
- // data+= "\"d\": {";
- // data+="\n";
   data+="\"ID\": \"Arduino Ultrasoud\",";
- // data+="\n";
   data+="\"Water_level\": ";
   data+=(int)current_distance;
-  //data+= ",";
-  //data+="\n";
   data+="}";
-  
-  //data+="}";
+  data+="\n";
   return data;
 }

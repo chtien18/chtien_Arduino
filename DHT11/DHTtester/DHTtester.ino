@@ -2,6 +2,9 @@
 // Written by ladyada, public domain
 
 #include "DHT.h"
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
 
 #define DHTPIN 2     // what digital pin we're connected to
 
@@ -23,13 +26,39 @@
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
 
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+
+/**************************************************************************/
+/*
+    Displays some basic information on this sensor from the unified
+    sensor API sensor_t type (see Adafruit_Sensor for more information)
+*/
+/**************************************************************************/
+void displaySensorDetails(void)
+{
+  sensor_t sensor;
+  bmp.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" hPa");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" hPa");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" hPa");  
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+
 float h=0;
 float t=0;
 float f=0;
+float pressure=0;
+float BMP_temp=0;
 void setup() {
   Serial.begin(9600);
  // Serial.println("DHTxx test!");
-
+  bmp.begin();
   dht.begin();
 }
 
@@ -58,6 +87,39 @@ void loop() {
   float hif = dht.computeHeatIndex(f, h);
   // Compute heat index in Celsius (isFahreheit = false)
   float hic = dht.computeHeatIndex(t, h, false);
+//------------------ end of DHT-------------------------
+
+ /* Get a new sensor event BMP180 */ 
+  sensors_event_t event;
+  bmp.getEvent(&event);
+ 
+  /* Display the results (barometric pressure is measure in hPa) */
+  if (event.pressure)
+  {
+    /* Display atmospheric pressue in hPa */
+   // Serial.print("Pressure:    ");
+    //Serial.print(event.pressure);
+    pressure=event.pressure;
+    //Serial.println(" hPa");
+ 
+    //float temperature;
+    bmp.getTemperature(&BMP_temp);
+    //Serial.print("Temperature: ");
+    //Serial.print(temperature);
+    //Serial.println(" C");
+
+    /* Then convert the atmospheric pressure, and SLP to altitude         */
+    /* Update this next line with the current SLP for better results      
+    float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+    Serial.print("Altitude:    "); 
+    Serial.print(bmp.pressureToAltitude(seaLevelPressure,
+                                        event.pressure)); 
+    Serial.println(" m");
+    Serial.println("");                                               */
+  }
+  
+//--------------------end of BMP180-----------------
+
 
   String json=buildJson();
   char jsonStr[200];
@@ -84,6 +146,14 @@ String buildJson() {
   //data+="\n";
   data+="\"humidity\": ";
   data+=(float)h;
+   data+= ",";
+   
+  data+="\"Pressure\": ";
+  data+=(float)pressure;
+  data+= ",";
+
+  data+="\"BMP_Temp (C)\": ";
+  data+=(float)BMP_temp;
   //data+="\n";
   data+="}";
   data+="\n";
